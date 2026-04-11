@@ -20,7 +20,7 @@ dcgp/
 
 ## Requisitos
 
-### Servidor C (Linux / AWS EC2)
+### Servidor C (Linux / GCP Compute Engine)
 ```bash
 sudo apt install gcc make
 ```
@@ -128,24 +128,45 @@ MITIGATE DB-PRIMARY
 
 ---
 
-## Despliegue en AWS (EC2)
+## Despliegue en GCP (Compute Engine)
 
-1. Lanzar instancia Ubuntu 22.04 (t2.micro o mayor)
-2. Abrir puertos en Security Group: 8080 (TCP), 8081 (TCP), 8082 (TCP)
-3. Copiar archivos:
+1. Crear una VM en Compute Engine (Debian 12 o Ubuntu 22.04, e2-small o superior):
    ```bash
-   scp -i key.pem *.c *.py *.java Makefile ubuntu@<hostname>:~/dcgp/
+   gcloud compute instances create dcgp-server \
+       --zone=us-central1-a \
+       --machine-type=e2-small \
+       --image-family=debian-12 \
+       --image-project=debian-cloud \
+       --tags=dcgp
    ```
-4. Compilar y ejecutar:
+2. Abrir los puertos del servicio en el firewall:
    ```bash
+   gcloud compute firewall-rules create dcgp-allow \
+       --allow=tcp:8080,tcp:8081,tcp:8082 \
+       --target-tags=dcgp
+   ```
+3. Copiar los archivos a la VM (o clonar el repo directamente dentro):
+   ```bash
+   gcloud compute scp --recurse ./ dcgp-server:~/dcgp --zone=us-central1-a
+   ```
+4. Conectarse, instalar dependencias y compilar:
+   ```bash
+   gcloud compute ssh dcgp-server --zone=us-central1-a
+   sudo apt update && sudo apt install -y gcc make python3-pip default-jdk
+   pip3 install requests --break-system-packages
    cd ~/dcgp
-   python3 identity_server.py 8081 &
    make
-   ./server 8080 /var/log/dcgp.log
    ```
-5. En los clientes locales, configurar el hostname (no IP):
+5. Levantar los tres servicios (en sesiones `tmux` o terminales separadas):
    ```bash
-   export GAME_HOST=ec2-xxx.compute-1.amazonaws.com
+   python3 identity_server.py 8081 &
+   ./server 8080 ~/dcgp.log
+   python3 web_server.py 8082 &
+   ```
+6. En los clientes locales, configurar el hostname (no la IP). GCP no asigna DNS público por defecto, así que puedes usar `nip.io` para resolver por nombre la IP externa de la VM:
+   ```bash
+   export GAME_HOST=34-123-45-67.nip.io   # ejemplo: la IP externa con guiones
+   export GAME_PORT=8080
    python3 client_attacker.py
    ```
 
