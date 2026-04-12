@@ -163,11 +163,30 @@ MITIGATE DB-PRIMARY
    ./server 8080 ~/dcgp.log
    python3 web_server.py 8082 &
    ```
-6. En los clientes locales, configurar el hostname (no la IP). GCP no asigna DNS público por defecto, así que puedes usar `nip.io` para resolver por nombre la IP externa de la VM:
+6. En los clientes locales, configurar el hostname (no la IP). GCP no asigna DNS público por defecto, así que se usa `nip.io` para resolver por nombre la IP externa de la VM. Para esta entrega la VM tiene IP `34.58.226.96`, así que el hostname DNS es `34.58.226.96.nip.io`:
    ```bash
-   export GAME_HOST=34-123-45-67.nip.io   # ejemplo: la IP externa con guiones
+   export GAME_HOST=34.58.226.96.nip.io
    export GAME_PORT=8080
    python3 client_attacker.py
+   ```
+   Verificación rápida de la resolución DNS:
+   ```bash
+   nslookup 34.58.226.96.nip.io
+   # Address: 34.58.226.96
+   ```
+   Defensor Java:
+   ```bash
+   java DefenderClient 34.58.226.96.nip.io 8080
+   ```
+   Web (navegador):
+   ```
+   http://34.58.226.96.nip.io:8082
+   ```
+   En la propia VM, al levantar el servidor de juego, también se debe exportar el hostname del identity server para que `server.c` lo resuelva por DNS (sin IPs hardcodeadas):
+   ```bash
+   export IDENTITY_HOST=34.58.226.96.nip.io
+   export IDENTITY_PORT=8081
+   ./server 8080 server.log
    ```
 
 ---
