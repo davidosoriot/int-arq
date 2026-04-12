@@ -651,7 +651,9 @@ static void handle_mitigate(Client *c, char params[][MSG_SIZE], int nparams)
                 send_to_client(c, "ERR 409 NOT_ATTACKED");
                 return;
             }
-            res->mitigated = 1;
+            /* Resetear estado del recurso: tras mitigar vuelve a ser atacable */
+            res->attacked  = 0;
+            res->mitigated = 0;
 
             char notif[MSG_SIZE];
             snprintf(notif, sizeof(notif),
