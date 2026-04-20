@@ -136,6 +136,7 @@ public class DefenderClient {
                 }
             }
             updateStatus("EN JUEGO – Sala #" + roomId);
+            if (gamePanel != null) SwingUtilities.invokeLater(() -> gamePanel.requestFocusInWindow());
         }
         // EVENT ATTACK_ALERT resource x y BY attacker
         // partes: [0]=EVENT [1]=ATTACK_ALERT [2]=resource [3]=x [4]=y [5]=BY [6]=attacker
@@ -151,12 +152,17 @@ public class DefenderClient {
                       + " en (" + parts[3] + "," + parts[4] + ")"
                       + " por " + attacker);
         }
+        // OK MITIGATE  ← respuesta al defensor que ejecutó la mitigación
+        else if (parts[0].equals("OK") && parts.length >= 2 && parts[1].equals("MITIGATE")) {
+            for (int[] r : resources.values()) { if (r[2] == 1 && r[3] == 0) { r[2] = 0; r[3] = 0; } }
+            updateStatus("✔ Mitigación exitosa");
+        }
         // EVENT MITIGATED resource BY defender
         else if (parts[0].equals("EVENT") && parts[1].equals("MITIGATED")
                  && parts.length >= 4) {
             String rname = parts[2];
             int[] res = resources.get(rname);
-            if (res != null) res[3] = 1;
+            if (res != null) { res[2] = 0; res[3] = 0; }
             alertedRes.remove(rname);
             updateStatus("✔ Mitigado: " + rname);
         }

@@ -224,6 +224,7 @@ class LoginScreen:
     def __init__(self):
         self.username = ""
         self.password = ""
+        self.room_id  = ""        # vacío = NEW
         self.active   = "username"
         self.error    = ""
         self.done     = False
@@ -231,23 +232,29 @@ class LoginScreen:
     def handle(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_TAB:
-                self.active = "password" if self.active == "username" else "username"
+                order = ["username", "password", "room_id"]
+                idx = order.index(self.active)
+                self.active = order[(idx + 1) % len(order)]
             elif event.key == pygame.K_RETURN:
-                if self.active == "username":
-                    self.active = "password"
+                order = ["username", "password", "room_id"]
+                idx = order.index(self.active)
+                if idx < len(order) - 1:
+                    self.active = order[idx + 1]
                 else:
                     if self.username and self.password:
                         self.done = True
                     else:
                         self.error = "Ingresa usuario y contraseña"
             elif event.key == pygame.K_BACKSPACE:
-                if self.active == "username": self.username = self.username[:-1]
-                else: self.password = self.password[:-1]
+                if self.active == "username":   self.username = self.username[:-1]
+                elif self.active == "password": self.password = self.password[:-1]
+                else:                           self.room_id  = self.room_id[:-1]
             else:
                 ch = event.unicode
-                if ch.isprintable() and ' ' not in ch:  # sin espacios (protocolo texto)
-                    if self.active == "username": self.username += ch
-                    else: self.password += ch
+                if ch.isprintable() and ' ' not in ch:
+                    if self.active == "username":   self.username += ch
+                    elif self.active == "password": self.password += ch
+                    else:                           self.room_id  += ch
 
     def draw(self, screen, font, font_big):
         screen.fill(BLACK)
@@ -255,15 +262,19 @@ class LoginScreen:
         t = font_big.render("DCGP – CLIENTE ATACANTE", True, ACCENT)
         screen.blit(t, (W2 - t.get_width()//2, 100))
 
-        box_y = H2 - 60
-        for label, key, field in [("Usuario:", "username", self.username),
-                                   ("Contraseña:", "password", self.password)]:
+        box_y = H2 - 80
+        fields = [
+            ("Usuario:",          "username", self.username),
+            ("Contraseña:",       "password", self.password),
+            ("Sala (vacío=NEW):", "room_id",  self.room_id),
+        ]
+        for label, key, field in fields:
             active = self.active == key
             col = ACCENT if active else BORDER
             screen.blit(font.render(label, True, TEXT), (W2-160, box_y)); box_y += 22
             pygame.draw.rect(screen, DARK, (W2-160, box_y, 320, 32))
             pygame.draw.rect(screen, col,  (W2-160, box_y, 320, 32), 1)
-            val = field if key == "username" else "*" * len(field)
+            val = field if key != "password" else "*" * len(field)
             screen.blit(font.render(val, True, TEXT), (W2-154, box_y+6))
             box_y += 48
 
@@ -309,6 +320,7 @@ def main():
 
     try:
         sock = socket.create_connection((GAME_HOST, GAME_PORT), timeout=5)
+        sock.settimeout(None)  # modo bloqueante tras conectar
     except Exception as e:
         print(f"No se pudo conectar: {e}")
         sys.exit(1)
@@ -323,9 +335,10 @@ def main():
     time.sleep(0.3)
 
     # Si el rol es incorrecto se mostrará en pantalla; seguir esperando
-    # Si la auth fue OK y el rol es ATTACKER, unirse a sala
+    # Si la auth fue OK y el rol es ATTACKER, pedir sala al usuario
     if not state.auth_error:
-        send_cmd("JOIN NEW")
+        room_input = login.room_id.strip() if login.room_id.strip() else "NEW"
+        send_cmd(f"JOIN {room_input}")
         time.sleep(0.2)
 
     # ── Game loop ──
