@@ -194,12 +194,12 @@ export IDENTITY_PORT=8081
 export GAME_HOST=localhost
 export GAME_PORT=8080
 python3 web_server.py 8082
-# Abrir http://localhost:8082 en el navegador
+# Abrir http://34.58.226.96.nip.io:8082 en el navegador
 ```
 
 ### 4. Cliente Atacante (Python)
 ```bash
-export GAME_HOST=localhost
+export GAME_HOST=34.58.226.96.nip.io
 export GAME_PORT=8080
 python3 client_attacker.py
 # Ingresar usuario y contraseña cuando lo pida (ej. alice / pass123)
@@ -208,7 +208,7 @@ python3 client_attacker.py
 ### 5. Cliente Defensor (Java)
 ```bash
 javac DefenderClient.java
-java DefenderClient localhost 8080
+java DefenderClient 34.58.226.96.nip.io 8080
 # Se abre ventana de login; ingresar credenciales (ej. bob / pass456)
 # El cliente envía AUTH y JOIN NEW automáticamente al conectarse
 ```
@@ -242,7 +242,7 @@ python3 identity_server.py 8081
 ./server 8080 test.log
 
 # Terminal 3 — cliente atacante manual
-telnet localhost 8080
+telnet 34.58.226.96.nip.io 8080
 AUTH alice pass123
 # Respuesta: OK AUTH alice ATTACKER
 JOIN NEW
@@ -250,7 +250,7 @@ JOIN NEW
 # (conectar defensor en terminal 4 antes de START)
 
 # Terminal 4 — cliente defensor manual
-telnet localhost 8080
+telnet 34.58.226.96.nip.io 8080
 AUTH bob pass456
 # Respuesta: OK AUTH bob DEFENDER
 JOIN 1001
